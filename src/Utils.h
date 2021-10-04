@@ -2,7 +2,6 @@
 
 #include "Vector.h"
 
-class Utils {
-public:
+namespace Utils {
     static void GetCurrentWindowSize(Vector2 &size);
-};
+}
