@@ -1,59 +1,73 @@
+#pragma warning(disable: 6385)
+
 #include <iostream>
-#include <map>
-#include "Vector.h"
-#include "Utils.h"
-#include "Image.h"
-#include "BrightnessMap.h"
+#include <algorithm>
 
-int main() {
+#include "classes/Vector.hpp"
+#include "classes/Image.hpp"
+#include "utils/utils.hpp"
+#include "settings/brightness_map.hpp"
 
-    // note:
-    // throughout the project X will correspond with the WIDTH and Y with the HEIGHT
+int main(int argc, char** argv)
+{
+	// Note:
+	// Throughout the project X will correspond with the WIDTH and Y with the HEIGHT
 
+	// Character width divided by character height (font dependent)
+	const float WIDTH_FACTOR = 2.f;
 
-    // character width divided by character height (font dependent)
-    const float widthFactor = 2.0f;
+	// Determine image filepath
+	std::string path;
+	if (argc >= 2)
+	{
+		path = argv[1];
+	}
+	else
+	{
+		std::cout << "Filepath: ";
+		std::cin >> path;
+	}
 
-    // user-input (filepath)
-    std::string path;
-    std::cout << "filepath: ";
-    std::cin >> path;
+	// Read image
+	Image img(path.c_str());
 
-    // read image
-    Image img(path.c_str());
-    Vector2 imageSize = {(float) img.width, (float) img.height};
+	// TODO: Maximize console window
 
-    // get size of console window
-    Vector2 windowSize{};
-    Utils::GetCurrentWindowSize(windowSize);
+	// Get size of console window
+	Vector2 windowSize{};
+	utils::getCurrentWindowSize(windowSize);
 
-    // calculate new image size
-    float scale = std::max((imageSize.x * widthFactor / (windowSize.x - 1.0f)), imageSize.y / windowSize.y);
-    Vector2 size = {(imageSize.x / scale * widthFactor), (imageSize.y / scale)};
+	// Calculate new image size
+	const float scale = std::max<float>((img.width * WIDTH_FACTOR / (windowSize.x - 1.f)), img.height / windowSize.y);
+	Vector2 size = { (img.width / scale * WIDTH_FACTOR), (img.height / scale) };
 
-    // resize image
-    Image::resize(img, (int) size.x, (int) size.y);
+	// Resize image
+	img.resize(size.x, size.y);
 
-    // get gray-values of image
-    float brightness[img.size / img.channels];
-    for (int i = 0; i < img.size; i += img.channels) {
-        int pos = i / img.channels;
-        brightness[pos] = (float) img.data[i];
-        brightness[pos] += (float) img.data[i + 1];
-        brightness[pos] += (float) img.data[i + 2];
-        brightness[pos] /= 3.0f * 255.0f;
-    }
+	// Get gray-values of image
+	float* brightness = new float[img.size / img.channels];
+	for (std::size_t i = 0; i < img.size; i += img.channels)
+	{
+		const std::size_t pos = i / img.channels;
 
-    // print image to console
-    for (int i = 0; i < img.size / img.channels; ++i) {
-        if (i % img.width == 0)
-            std::cout << std::endl;
-        std::cout << charBrightnessMap.lower_bound(brightness[i])->second;
-    }
+		brightness[pos] = 0.f;
+		for (std::int32_t j = 0; j < img.channels; ++j)
+			brightness[pos] += (float) img.data[i + j];
 
-    // press enter to close program
-    std::cin.ignore();
-    std::cin.get();
+		brightness[pos] /= 3.f * 255.f;
+	}
 
-    return EXIT_SUCCESS;
+	// Print image to console
+	for (std::size_t i = 0; i < img.size / img.channels; ++i)
+	{
+		if (i % img.width == 0)
+			std::cout << std::endl;
+		std::cout << CHAR_BRIGHTNESS_MAP.lower_bound(brightness[i])->second;
+	}
+
+	delete[] brightness;
+
+	utils::pause();
+
+	return EXIT_SUCCESS;
 }
